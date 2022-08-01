@@ -1,0 +1,20 @@
+version: '3.4'
+services:
+  dotnetapp:
+    image: samson2ky/dotnetapp:v2
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '80:80'
+    environment:
+      MONGO_URL: $MONGO_URL
+  database:
+    image: 'mongo:latest'
+    ports:
+      - '2000:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $MONGO_USERNAME
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_PASSWORD
+    volumes:
+      - ./data:/data/db

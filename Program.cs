@@ -1,44 +1,54 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//retrieve port from environment variables
-var port = builder.Configuration["PORT"];
 
-//set listening urls
-builder.WebHost.UseUrls($"http://*:{port};http://localhost:3000");
-
-//build application
+builder.Services.AddHealthChecks().AddCheck<MongoHealthCheck>("mongo");
 builder.Services.AddSingleton<IMongoCollection<Person>>(s =>
 {
+    //  app.Logger.LogInformation("tryna connect to db {name}");
+    s.GetService<ILogger<IServiceProvider>>()!.LogInformation(12, "tryna connect to db {name}", "test");
     //retrieve connection string from environment variables
-    var client = new MongoClient(s.GetService<IConfiguration>()!["MONGO_URL"]);
+    var connectionString = builder.Configuration.GetSection(MongoConnectionSettings.position).Get<MongoConnectionSettings>().MONGO_URL;
+    Console.WriteLine("connection ssssssssssssssssssssssssssss");
+    Console.WriteLine(connectionString);
+    var client = new MongoClient(connectionString);
     var database = client.GetDatabase("test");
-      return database.GetCollection<Person>("people");
+    return database.GetCollection<Person>("people");
 });
 
 var app = builder.Build();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = hc => hc.Name.Contains("mongo"),
+    //AllowCachingResponses = false
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapGet("/", () => "Hello world Chik🥂");
 
-app.MapGet("/",()=>"Hello world 🥂");
-
-app.MapGet("/{name}", async (string name,IMongoCollection<Person> collection) =>
+app.MapGet("/{name}", async (string name, IMongoCollection<Person> collection) =>
 {
     // find users bearing same name
-   var result = await collection
-   .Find(Builders<Person>.Filter.Eq(x=>x.name,name))
-   .Project(Builders<Person>.Projection.Expression(x=>new Person(x.name,x.age)))
-   .ToListAsync();
+    app.Logger.LogInformation("Finding users with name {name}", name);
+    var result = await collection
+    .Find(Builders<Person>.Filter.Eq(x => x.name, name))
+    .Project(Builders<Person>.Projection.Expression(x => new Person(x.name, x.age)))
+    .ToListAsync();
 
     // return 404 if not found
-   if(result == null) return Results.NotFound();
-   
-   //return result
-   return Results.Ok(result);
+    if (result == null) return Results.NotFound();
+
+    //return result
+    return Results.Ok(result);
 });
 app.MapPost("/create", async (Person person, IMongoCollection<Person> collection) =>
 {
     //crete user
-    await collection.InsertOneAsync(new Person(person.name,person.age));
+    await collection.InsertOneAsync(new Person(person.name, person.age));
 
     // return 202
     return Results.Accepted();
