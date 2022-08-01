@@ -7,12 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks().AddCheck<MongoHealthCheck>("mongo");
 builder.Services.AddSingleton<IMongoCollection<Person>>(s =>
 {
-    //  app.Logger.LogInformation("tryna connect to db {name}");
-    s.GetService<ILogger<IServiceProvider>>()!.LogInformation(12, "tryna connect to db {name}", "test");
-    //retrieve connection string from environment variables
     var connectionString = builder.Configuration.GetSection(MongoConnectionSettings.position).Get<MongoConnectionSettings>().MONGO_URL;
-    Console.WriteLine("connection ssssssssssssssssssssssssssss");
-    Console.WriteLine(connectionString);
     var client = new MongoClient(connectionString);
     var database = client.GetDatabase("test");
     return database.GetCollection<Person>("people");
