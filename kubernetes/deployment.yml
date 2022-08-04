@@ -82,12 +82,12 @@ spec:
         - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
             secretKeyRef:
-              name: dotnetdb-secret
+              name: dotnetdb-secrets
               key: username
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dotnetdb-secret
+              name: dotnetdb-secrets
               key: password
         ports:
         - containerPort: 27017
